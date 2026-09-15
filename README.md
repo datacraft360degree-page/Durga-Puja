@@ -25,7 +25,7 @@
         <h1 class="text-3xl font-extrabold flex items-center gap-3">
           <i class="fa-solid fa-gopuram text-amber-300"></i> দুর্গোৎসব পরিক্রমা Planner & Dashboard
         </h1>
-        <p class="text-red-100 text-sm mt-1">Plan, track, and monitor your Durga Puja pandal hopping with auto-numbered lists.</p>
+        <p class="text-red-100 text-sm mt-1">Plan, track, and monitor your Durga Puja pandal hopping.</p>
       </div>
       <div class="mt-4 md:mt-0 flex gap-3">
         <button onclick="addNewRow()" class="bg-amber-400 hover:bg-amber-500 text-red-950 font-bold px-4 py-2 rounded-xl shadow transition duration-200 flex items-center gap-2">
@@ -110,7 +110,7 @@
     <div class="bg-white rounded-2xl shadow-sm border border-amber-100 overflow-hidden">
       <div class="p-5 bg-amber-50 border-b border-amber-100 flex justify-between items-center">
         <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
-          <i class="fa-solid fa-list-check text-amber-600"></i> Parikrama Schedule & Auto-Numbered Pandals
+          <i class="fa-solid fa-list-check text-amber-600"></i> Parikrama Schedule & list
         </h2>
         <span class="text-xs text-gray-500 italic"><i class="fa-solid fa-pen"></i> Click any text to edit inline. Use "+ Add Pandal" for auto-numbering.</span>
       </div>
@@ -123,7 +123,7 @@
               <th class="p-4">Day</th>
               <th class="p-4">Date</th>
               <th class="p-4">তিথি (Tithi)</th>
-              <th class="p-4 w-2/5">Auto-Numbered Pandals List</th>
+              <th class="p-4 w-2/5">Pandals List</th>
               <th class="p-4">Via Mode</th>
               <th class="p-4 text-center">Actions</th>
             </tr>
