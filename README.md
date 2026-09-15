@@ -19,15 +19,23 @@
 
   <div class="max-w-7xl mx-auto space-y-8">
     
+    <!-- Sync Status Banner -->
+    <div id="sync-status" class="hidden text-xs text-center py-2 px-4 rounded-lg bg-amber-100 text-amber-800 font-semibold border border-amber-300">
+      <i class="fa-solid fa-spinner fa-spin mr-2"></i> Syncing with Google Sheet...
+    </div>
+
     <!-- Header -->
     <div class="flex flex-col md:flex-row justify-between items-center bg-gradient-to-r from-red-700 via-red-600 to-amber-600 text-white p-6 rounded-2xl shadow-lg">
       <div>
         <h1 class="text-3xl font-extrabold flex items-center gap-3">
           <i class="fa-solid fa-gopuram text-amber-300"></i> দুর্গোৎসব পরিক্রমা Planner & Dashboard
         </h1>
-        <p class="text-red-100 text-sm mt-1">Plan, track, and monitor your Durga Puja pandal hopping.</p>
+        <p class="text-red-100 text-sm mt-1">Plan, track, and monitor your Durga Puja pandal hopping with auto-numbered lists.</p>
       </div>
       <div class="mt-4 md:mt-0 flex gap-3">
+        <button onclick="fetchDataFromSheet()" class="bg-amber-300 hover:bg-amber-400 text-red-950 font-bold px-4 py-2 rounded-xl shadow transition duration-200 flex items-center gap-2 text-sm">
+          <i class="fa-solid fa-arrows-rotate"></i> Refresh Data
+        </button>
         <button onclick="addNewRow()" class="bg-amber-400 hover:bg-amber-500 text-red-950 font-bold px-4 py-2 rounded-xl shadow transition duration-200 flex items-center gap-2">
           <i class="fa-solid fa-plus"></i> Add New Day
         </button>
@@ -110,9 +118,9 @@
     <div class="bg-white rounded-2xl shadow-sm border border-amber-100 overflow-hidden">
       <div class="p-5 bg-amber-50 border-b border-amber-100 flex justify-between items-center">
         <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
-          <i class="fa-solid fa-list-check text-amber-600"></i> Parikrama Schedule & list
+          <i class="fa-solid fa-list-check text-amber-600"></i> Parikrama Schedule & Auto-Numbered Pandals
         </h2>
-        <span class="text-xs text-gray-500 italic"><i class="fa-solid fa-pen"></i> Click any text to edit inline. Use "+ Add Pandal" for auto-numbering.</span>
+        <span class="text-xs text-gray-500 italic"><i class="fa-solid fa-pen"></i> Click any text to edit inline. Changes sync automatically to Google Sheets.</span>
       </div>
 
       <div class="overflow-x-auto">
@@ -123,7 +131,7 @@
               <th class="p-4">Day</th>
               <th class="p-4">Date</th>
               <th class="p-4">তিথি (Tithi)</th>
-              <th class="p-4 w-2/5">Pandals List</th>
+              <th class="p-4 w-2/5">Auto-Numbered Pandals List</th>
               <th class="p-4">Via Mode</th>
               <th class="p-4 text-center">Actions</th>
             </tr>
@@ -138,7 +146,9 @@
   </div>
 
   <script>
-    // Initial Dataset converted into structured array lists for auto-numbering
+    // Replace with your Google Apps Script Web App URL
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxZDXzhyyNP7n_u6GP_2OG945Qlgob8hYyBFmVgALKVzdQ0p_UI4a97Kzu8NQoU5pHh/exec";
+
     const initialData = [
       { id: 1, day: "Saturday", date: "10th Oct", tithi: "মহালয়া", pandals: ["Kumortuli visit(Morning Time)"], via: "Bike", completed: false },
       { id: 2, day: "Sunday", date: "11th Oct", tithi: "মহা প্রথমা", pandals: ["Santosh Mitra Square", "College Square", "Hedua Park", "Shree Bhumi"], via: "Bike", completed: false },
@@ -153,13 +163,63 @@
       { id: 11, day: "Tuesday", date: "20th Oct", tithi: "বিজয়া দশমী", pandals: ["Own Para Pandal"], via: "Bike", completed: false }
     ];
 
-    let scheduleData = JSON.parse(localStorage.getItem('durgaPujaScheduleAuto')) || initialData;
+    let scheduleData = [];
     let pandalChart, progressChart;
 
-    // Save Data to LocalStorage
-    function saveData() {
-      localStorage.setItem('durgaPujaScheduleAuto', JSON.stringify(scheduleData));
+    // Show Sync Status
+    function showStatus(message, isError = false) {
+      const banner = document.getElementById('sync-status');
+      banner.className = `text-xs text-center py-2 px-4 rounded-lg font-semibold border transition ${
+        isError ? 'bg-red-100 text-red-800 border-red-300' : 'bg-amber-100 text-amber-800 border-amber-300'
+      }`;
+      banner.innerHTML = message;
+      banner.classList.remove('hidden');
+    }
+
+    function hideStatus() {
+      document.getElementById('sync-status').classList.add('hidden');
+    }
+
+    // Fetch Data from Google Sheet
+    async function fetchDataFromSheet() {
+      showStatus('<i class="fa-solid fa-spinner fa-spin mr-2"></i> Loading data from Google Sheet...');
+      try {
+        const response = await fetch(SCRIPT_URL);
+        const data = await response.json();
+        
+        if (data && data.length > 0) {
+          scheduleData = data;
+        } else {
+          scheduleData = JSON.parse(JSON.stringify(initialData));
+          await syncToSheet(); // Populate initial data if sheet is empty
+        }
+        renderTable();
+        hideStatus();
+      } catch (err) {
+        console.error("Fetch Error:", err);
+        showStatus("Failed to fetch from Google Sheet. Check SCRIPT_URL configuration.", true);
+        scheduleData = JSON.parse(JSON.stringify(initialData));
+        renderTable();
+      }
+    }
+
+    // Automatic Sync to Google Sheet after any entry/change
+    async function syncToSheet() {
+      showStatus('<i class="fa-solid fa-arrows-rotate fa-spin mr-2"></i> Saving changes to Google Sheet...');
       updateDashboard();
+      try {
+        await fetch(SCRIPT_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(scheduleData)
+        });
+        showStatus('<i class="fa-solid fa-circle-check text-green-600 mr-2"></i> Synced successfully!');
+        setTimeout(hideStatus, 2000);
+      } catch (err) {
+        console.error("Sync Error:", err);
+        showStatus("Failed to save changes to Google Sheet.", true);
+      }
     }
 
     // Render Table Rows with Auto-Numbering
@@ -171,9 +231,8 @@
         const tr = document.createElement('tr');
         tr.className = row.completed ? 'bg-green-50/50' : 'hover:bg-amber-50/30';
 
-        // Construct Auto Numbered List HTML
         let pandalsHTML = `<ol class="list-decimal list-inside space-y-1">`;
-        if (row.pandals.length === 0) {
+        if (!row.pandals || row.pandals.length === 0) {
           pandalsHTML += `<li class="text-gray-400 italic list-none">No pandals planned</li>`;
         } else {
           row.pandals.forEach((pandal, pIndex) => {
@@ -220,8 +279,10 @@
 
     // Handlers for Row Fields & Auto Numbered Pandals
     function updateField(index, field, value) {
-      scheduleData[index][field] = value.trim();
-      saveData();
+      if (scheduleData[index][field] !== value.trim()) {
+        scheduleData[index][field] = value.trim();
+        syncToSheet();
+      }
     }
 
     function updatePandal(rowIndex, pandalIndex, value) {
@@ -229,29 +290,30 @@
         removePandal(rowIndex, pandalIndex);
       } else {
         scheduleData[rowIndex].pandals[pandalIndex] = value.trim();
-        saveData();
+        syncToSheet();
       }
     }
 
     function addPandal(rowIndex) {
       const name = prompt("Enter Pandal Name:");
       if (name && name.trim() !== "") {
+        if (!scheduleData[rowIndex].pandals) scheduleData[rowIndex].pandals = [];
         scheduleData[rowIndex].pandals.push(name.trim());
-        saveData();
         renderTable();
+        syncToSheet();
       }
     }
 
     function removePandal(rowIndex, pandalIndex) {
       scheduleData[rowIndex].pandals.splice(pandalIndex, 1);
-      saveData();
       renderTable();
+      syncToSheet();
     }
 
     function toggleComplete(index) {
       scheduleData[index].completed = !scheduleData[index].completed;
-      saveData();
       renderTable();
+      syncToSheet();
     }
 
     function addNewRow() {
@@ -265,23 +327,23 @@
         completed: false
       };
       scheduleData.push(newEntry);
-      saveData();
       renderTable();
+      syncToSheet();
     }
 
     function deleteRow(index) {
       if (confirm("Are you sure you want to delete this day?")) {
         scheduleData.splice(index, 1);
-        saveData();
         renderTable();
+        syncToSheet();
       }
     }
 
     function resetData() {
       if (confirm("Reset schedule back to original auto-numbered template?")) {
         scheduleData = JSON.parse(JSON.stringify(initialData));
-        saveData();
         renderTable();
+        syncToSheet();
       }
     }
 
@@ -293,7 +355,7 @@
       const pandalCounts = [];
 
       scheduleData.forEach(row => {
-        const count = row.pandals.length;
+        const count = row.pandals ? row.pandals.length : 0;
         totalPandals += count;
         if (row.completed) {
           visitedPandals += count;
@@ -306,7 +368,6 @@
       const pendingPandals = Math.max(0, totalPandals - visitedPandals);
       const completionRate = totalPandals > 0 ? Math.round((visitedPandals / totalPandals) * 100) : 0;
 
-      // Update Top Stat Cards
       document.getElementById('stat-total-pandals').innerText = totalPandals;
       document.getElementById('stat-visited-pandals').innerText = visitedPandals;
       document.getElementById('stat-pending-pandals').innerText = pendingPandals;
@@ -316,7 +377,6 @@
     }
 
     function renderCharts(labels, pandalCounts, visited, pending) {
-      // Bar Chart
       const ctxBar = document.getElementById('pandalChart').getContext('2d');
       if (pandalChart) pandalChart.destroy();
       
@@ -339,7 +399,6 @@
         }
       });
 
-      // Pie Chart
       const ctxPie = document.getElementById('progressChart').getContext('2d');
       if (progressChart) progressChart.destroy();
 
@@ -360,9 +419,9 @@
       });
     }
 
-    // Initialize Page
+    // Initialize Page on Load
     window.onload = () => {
-      renderTable();
+      fetchDataFromSheet();
     };
   </script>
 </body>
