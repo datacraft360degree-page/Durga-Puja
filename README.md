@@ -182,7 +182,7 @@
 
     // Fetch Data from Google Sheet
     async function fetchDataFromSheet() {
-      showStatus('<i class="fa-solid fa-spinner fa-spin mr-2"></i> Loading data from Google Sheet...');
+      showStatus('<i class="fa-solid fa-spinner fa-spin mr-2"></i> Loading data from Server...');
       try {
         const response = await fetch(SCRIPT_URL);
         const data = await response.json();
@@ -197,7 +197,7 @@
         hideStatus();
       } catch (err) {
         console.error("Fetch Error:", err);
-        showStatus("Failed to fetch from Google Sheet. Check SCRIPT_URL configuration.", true);
+        showStatus("Failed to fetch from Server. Check SCRIPT_URL configuration.", true);
         scheduleData = JSON.parse(JSON.stringify(initialData));
         renderTable();
       }
@@ -205,7 +205,7 @@
 
     // Automatic Sync to Google Sheet after any entry/change
     async function syncToSheet() {
-      showStatus('<i class="fa-solid fa-arrows-rotate fa-spin mr-2"></i> Saving changes to Google Sheet...');
+      showStatus('<i class="fa-solid fa-arrows-rotate fa-spin mr-2"></i> Saving changes to Server...');
       updateDashboard();
       try {
         await fetch(SCRIPT_URL, {
@@ -218,7 +218,7 @@
         setTimeout(hideStatus, 2000);
       } catch (err) {
         console.error("Sync Error:", err);
-        showStatus("Failed to save changes to Google Sheet.", true);
+        showStatus("Failed to save changes to Server.", true);
       }
     }
 
